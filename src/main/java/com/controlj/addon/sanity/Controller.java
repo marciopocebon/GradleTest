@@ -21,7 +21,7 @@
  */
 
 package com.controlj.addon.sanity;
-//TESTING
+
 import com.controlj.green.addonsupport.InvalidConnectionRequestException;
 import com.controlj.green.addonsupport.access.*;
 import com.controlj.green.addonsupport.access.aspect.PhysicalPoint;
