@@ -13,6 +13,29 @@ info {
   version = '2.1'
   vendor = 'ALC Labs'
 }
+class TsCompileTask extends DefaultTask {
+
+    @InputFiles
+    FileTree source
+
+    @OutputDirectory
+    File outputDir
+
+    @TaskAction
+    void compile() {
+        println "compiling TypeScript files..."
+        project.exec {
+            ignoreExitValue = true
+            executable = project.nodeExecutable()
+
+            args "${project.buildDir}/node/node_modules/typescript/bin/tsc"
+            args "--p"
+            args "${project.projectDir}/tsconfig.json"
+            args "--outDir"
+            args outputDir.toString()
+        }
+    }
+}
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
