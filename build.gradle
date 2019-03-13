@@ -40,6 +40,68 @@ class TsCompileTask extends DefaultTask {
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
+class TsCompileTask extends DefaultTask {
+
+    @InputFiles
+    FileTree source
+
+    @OutputDirectory
+    File outputDir
+
+    @TaskAction
+    void compile() {
+        println "compiling TypeScript files..."
+        project.exec {
+            ignoreExitValue = true
+            executable = project.nodeExecutable()
+
+            args "${project.buildDir}/node/node_modules/typescript/bin/tsc"
+            args "--p"
+            args "${project.projectDir}/tsconfig.json"
+            args "--outDir"
+            args outputDir.toString()
+        }
+    }
+}
+
+task tsCompile(type: TsCompileTask, dependsOn: unpackNode) {
+    source = fileTree("src/main/resources/com/kapowtech/rl2graph/")
+    outputDir = file("${buildDir}/resources/main/")
+}
+
+compileJava.dependsOn tsCompile
+
+configurations.all { conf ->
+    dependencies.all { dep ->
+        if (!(dep instanceof ProjectDependency) && !(dep instanceof FileCollectionDependency)
+                && dep.name != 'findbugs') {
+            dep.transitive = false
+        }
+    }
+}
+
+classes.doLast {
+    // this is needed for ThirdPartyLicenseTest
+    copy {
+        into "$buildDir/dependencies/lib"
+        from configurations.runtime
+        // annotations-3* and annotations-1* are findbugs annotations and we are not allowed to distribute them.
+        exclude ('annotations-3*.jar', 'annotations-1*.jar')
+    }
+}
+
+jar {
+    exclude('**/*.ts')
+    destinationDir = file('build')
+    archiveName = 'kapowtech-rl2graph.jar'
+    manifest {
+        attributes 'Title': 'Kapow Technologies RL2 Graph',
+                   'Version': getProductVersion(),
+                   'Vendor' : 'Kapow Technologies',
+                   'Built-By' : System.getProperty("user.name")
+    }
+}
+
 dependencies {
    compile 'jstl:jstl:1.1.2'
    compile 'taglibs:standard:1.1.2'
