@@ -1,84 +1,18 @@
-sourceSets {
-    main {
-        output.classesDir = 'build/classes'
-    }
-    test {
-        output.classesDir = 'build/junit-classes'
-    }
+// this bit of complexity is to pull down the main build script from the alclabs maven repository
+// and then apply it.
+configurations { gradleScript }
+repositories { maven { url 'http://repo.alcshare.com'} }
+dependencies { gradleScript group: 'com.alcshare', name: 'addon-gradle', ext: 'gradle', version: '1.7' }
+apply from: configurations.gradleScript.resolve().iterator().next()
+
+
+
+info {
+  name = 'Sanity Check'
+  description = 'Checks for sane field values'
+  version = '2.1'
+  vendor = 'ALC Labs'
 }
-
-configurations {
-    node
-    nodeexe
-}
-
-configurations.node {
-    description = "empty configuration for our node dependencies"
-}
-
-configurations.nodeexe {
-    description = "empty configuration for node executable dependencies"
-}
-
-def nodeVersion = '4.8.7'
-
-dependencies {
-    nodeexe group: 'node', name: 'node', version: nodeVersion, ext: 'zip'
-    node group: 'node', name: 'typescript', version: '2.9.2', ext: 'zip'
-}
-
-static def isLinux() {
-    return org.gradle.internal.os.OperatingSystem.current() != org.gradle.internal.os.OperatingSystem.WINDOWS
-}
-
-static def isWindows() {
-    return org.gradle.internal.os.OperatingSystem.current() == org.gradle.internal.os.OperatingSystem.WINDOWS
-}
-
-def nodeExecutable() {
-    return "${buildDir}/node/bin/" + (isWindows() ? "node.exe" : "node")
-}
-
-task unpackNodeModules() {
-    inputs.files project.configurations.node.findAll { it.name.endsWith(".zip")  }.each { fi -> fi.absolutePath }
-    outputs.files "${buildDir}/node/node_modules/"
-
-    doLast {
-        project.configurations.node.findAll { it.name.endsWith(".zip") && !it.name.equals("node-"+nodeVersion+".zip") }.each { fi ->
-            println "Unpacking " + fi.name
-            copy {
-                from zipTree(fi.absolutePath)
-                into file("${buildDir}/node/node_modules/"+ fi.name.replace(".zip", "").replaceFirst(/-[\d\.]+/, ""))
-            }
-        }
-    }
-}
-
-task unpackNode(dependsOn: unpackNodeModules) {
-    inputs.files project.configurations.nodeexe.findAll { it.name.endsWith(".zip")  }.each { fi -> fi.absolutePath }
-    outputs.files "${buildDir}/node/bin/"
-
-    doLast {
-        project.configurations.nodeexe.findAll { it.name.endsWith(".zip") }.each { fi ->
-            println "Unpacking node " + nodeVersion + " binaries " + fi.name
-            def excludeFilter = isLinux() ? ['bin/node.exe','bin/node.lib'] : ['bin/node']
-            copy {
-                from zipTree(fi.absolutePath)
-                exclude excludeFilter
-                into file("./build/node")
-            }
-            if (isLinux()) {
-                copy {
-                    from zipTree(fi.absolutePath)
-                    into file("./build/node")
-                    include('bin/node')
-                    fileMode 0755
-                }
-            }
-        }
-    }
-}
-
 class TsCompileTask extends DefaultTask {
 
     @InputFiles
@@ -103,41 +37,15 @@ class TsCompileTask extends DefaultTask {
     }
 }
 
-task tsCompile(type: TsCompileTask, dependsOn: unpackNode) {
-    source = fileTree("src/main/resources/com/kapowtech/rl2graph/")
-    outputDir = file("${buildDir}/resources/main/")
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+dependencies {
+   compile 'jstl:jstl:1.1.2'
+   compile 'taglibs:standard:1.1.2'
+
+   testCompile 'junit:junit:3.8.1'
+
+   providedCompile 'com.controlj.green:directaccess-api-addon:1.1.0'
+   providedCompile 'javax.servlet:servlet-api:2.5'
 }
-
-compileJava.dependsOn tsCompile
-
-configurations.all { conf ->
-    dependencies.all { dep ->
-        if (!(dep instanceof ProjectDependency) && !(dep instanceof FileCollectionDependency)
-                && dep.name != 'findbugs') {
-            dep.transitive = false
-        }
-    }
-}
-
-classes.doLast {
-    // this is needed for ThirdPartyLicenseTest
-    copy {
-        into "$buildDir/dependencies/lib"
-        from configurations.runtime
-        // annotations-3* and annotations-1* are findbugs annotations and we are not allowed to distribute them.
-        exclude ('annotations-3*.jar', 'annotations-1*.jar')
-    }
-}
-
-jar {
-    exclude('**/*.ts')
-    destinationDir = file('build')
-    archiveName = 'kapowtech-rl2graph.jar'
-    manifest {
-        attributes 'Title': 'Kapow Technologies RL2 Graph',
-                'Version': getProductVersion(),
-                'Vendor' : 'Kapow Technologies',
-                'Built-By' : System.getProperty("user.name")
-    }
-}
-
