@@ -1,14 +1,14 @@
 Sanity Check
 ============
 
-The Sanity Add-On is intended to demonstrate basic field data access. It allows a user to configure a list of microblock display names that have interesting values along with minimum and maximum expected values. It can then perform a a basic sanity check to look for any current values outside of the specified ranges. This may be useful finding problems like open or shorted sensors.
+The Sanity Add-On is intended to demonstrate basic field data access. It allows a user to configure a list of microblock display names that have interesting values along with minimum and maximum expected value(s). It can then perform a a basic sanity check to look for any current values outside of the specified ranges. This may be useful finding problems like open or shorted sensors.
 
 Try it out
 ----------
 
 Deploy the Sanity sample add-on by executing the 'deploy' task and starting (if necessary) the server.
 
-Browse to `http://yourserver/sanity`. This should present a login page. Log in with any valid operator and password.
+Browse to `http://yourserver/sanity`. This should present a login page. Log in with any valid operator and password. 
 
 Add some values to check. Fill in some display names (like "Zone Temp"), minimum, and maximum values, then click the "Add" button.
 
